@@ -1,0 +1,17 @@
+#!/bin/sh
+
+echo "Checking for rewrite of PIP_TRUSTED_HOST=${PIP_TRUSTED_HOST}"
+case x${PIP_TRUSTED_HOST} in
+  xhttp:*)
+    echo "Rewriting PIP_TRUSTED_HOST ${PIP_TRUSTED_HOST}"
+    export PIP_TRUSTED_HOST=$( echo ${PIP_TRUSTED_HOST} | cut -d/ -f 3 )
+    echo "PIP_TRUSTED_HOST is now ${PIP_TRUSTED_HOST}"
+    ;;
+esac
+
+cd /
+rm -rf $HOME
+mkdir $HOME
+cd
+
+exec ${STI_SCRIPTS_PATH}/assemble "$@"

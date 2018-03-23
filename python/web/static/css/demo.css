@@ -1,0 +1,11 @@
+body { padding-top: 0rem; }
+div.demo-template { padding: 40px 15px; text-align: left; text-decoration: : line-through; }
+.nav, .pagination, .carousel, .panel-title a { cursor: pointer; }
+/* div.podlist h4.pannel-title div.ng-binding { font-size:inherit; } */
+div.podlist.valid-false h4.panel-title div.ng-scope div.ng-binding { text-decoration: line-through; color: grey; }
+/* div.pod-info { border-collapse: collapse; border: 1px solid #000; } */
+div.podlist { margin-bottom: 1em; }
+
+.label-title {font-size: 16px;font-weight: 600;padding-bottom: 10px;}
+
+hr {display: block;height: 10px;border: 0;border-top: 1px solid #525252;margin: 1em 0;padding: 0;}

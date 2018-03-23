@@ -1,0 +1,3 @@
+APP_SCRIPT=
+LOGLEVEL=warnings
+DEMO_FILE_PATH=/tmp/demo.txt

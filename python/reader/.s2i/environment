@@ -1,0 +1,6 @@
+APP_CONFIG=config.py
+APP_MODULE=wsgi:app
+GUNICORN_PROCESSES=6
+GUNICORN_THREADS=6
+LOGLEVEL=warnings
+DEMO_FILE_PATH=/opt/app-root/data/demo.txt

@@ -1,0 +1,117 @@
+<div uib-accordion-group
+  class="panel-default podlist angular-animate"
+  ng-class="$ctrl.pod.state != 'Running' ? 'valid-false' : 'valid'"
+  heading=""
+  is-disabled="$ctrl.pod.state != 'Running'"
+  is-open="$ctrl.open">
+  <uib-accordion-heading>
+    {[ $ctrl.name ]} <span class="small">claim: {[ $ctrl.pod.claim ]}</span>
+    <div class="row" style="padding-top: 1rem;">
+      <div class="col-sm-10">
+
+        <div class="row row-cards-pf">
+
+          <div class="col-xs-5 col-sm-3 col-md-3">
+            <div class="card-pf card-pf-accented card-pf-aggregate-status">
+              <h2 class="card-pf-title">
+                <span class="fa fa-tachometer"></span>
+                <span class="card-pf-aggregate-status-count">{[ $ctrl.read_now.timer | number:1 ]}</span>
+               ms Reads
+              </h2>
+              <div class="card-pf-body">
+                <p class="card-pf-aggregate-status-notifications">
+                  <span class="card-pf-aggregate-status-notification"><span uib-tooltip="total items read" tooltip-placement="bottom"><span class="pficon pficon-ok"></span>{[ $ctrl.read_sum.items | number:0 ]}</span></span>
+                  <span class="card-pf-aggregate-status-notification"><span uib-tooltip="total errors encountered" tooltip-placement="bottom"><span class="pficon pficon-error-circle-o"></span>{[ $ctrl.read_sum.errors | number:0 ]}</span></span>
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-xs-5 col-sm-3 col-md-3">
+            <div class="card-pf card-pf-accented card-pf-aggregate-status">
+              <h2 class="card-pf-title">
+                <span class="fa fa-tachometer"></span>
+                <span class="card-pf-aggregate-status-count">{[ $ctrl.write_now.timer | number:1 ]}</span>
+               ms Writes
+              </h2>
+              <div class="card-pf-body">
+                <p class="card-pf-aggregate-status-notifications">
+                  <span class="card-pf-aggregate-status-notification"><span uib-tooltip="entries written" tooltip-placement="bottom"><span class="pficon pficon-ok"></span>{[ $ctrl.write_sum.items | number:0 ]}</span></span>
+                  <span class="card-pf-aggregate-status-notification"><span uib-tooltip="total kb written" tooltip-placement="bottom"><span class="pficon pficon-network"></span>{[ $ctrl.write_sum.bytes | number:0 ]}</span></span>
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-xs-8 col-sm-3 col-md-3">
+            <div class="card-pf card-pf-accented card-pf-aggregate-status">
+              <h2 class="card-pf-title text-left" ng-click="$ctrl.plc.button_click_stop($event)">
+                Read Position<br />
+                <input class="text-left" type="text" ng-model="$ctrl.read_pos" maxlength="10" style="width: 10em;"/>
+              </h2>
+
+              <div class="card-pf-body">
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+      <div class="col-sm-2 pull-right">
+
+        <div class="row">
+          <div class="col-sm-12">
+            <uib-progressbar
+              animate="false"
+              max="1"
+              value="1"
+              type="{[ $ctrl.stateToType() ]}"
+              class="{[ $ctrl.stateToClass() ]}">
+              {[ $ctrl.pod.state ]}
+            </uib-progressbar>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="btn-group col-sm-12">
+            <label ng-repeat="mode in $ctrl.getModelList()"
+              ng-model="$ctrl.btnModel[mode][0]"
+              class="btn btn-sm col-sm-6"
+              ng-class="$ctrl.btnModel[mode][0] ? $ctrl.btnModel[mode][1] : 'btn-info'"
+              ng-click="$ctrl.plc.button_click_stop($event)"
+              ng-change="$ctrl.btnChange(mode)"
+              uncheckable="true"
+              uib-btn-radio="mode">{[ mode ]} </label>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </uib-accordion-heading>
+  <div class="row well">
+    <div class="col-md-3 pod-info">
+      <pf-info-status-card status="$ctrl.infoStatus" show-top-border="true"></pf-info-status-card>
+
+    </div>
+
+    <div class="col-md-9 pod-charts-group">
+      <div class="row row-cards-pf">
+        <pod-metric-chart name="{[name]}" started="$ctrl.readStarted" chart-id='readTime' title="Read Response Time" units='ms' ng-model='$ctrl.read_now.timer' class="col-md-4">
+        </pod-metric-chart>
+        <pod-metric-chart name="{[name]}" started="$ctrl.readStarted" chart-id='readItems' title="Reads" units='reads' ng-model='$ctrl.read_now.items' class="col-md-4">
+        </pod-metric-chart>
+        <pod-metric-chart name="{[name]}" started="$ctrl.readStarted" chart-id='readErrors' title="Errors" units='errors' ng-model='$ctrl.read_now.errors' class="col-md-4">
+        </pod-metric-chart>
+      </div>
+      <div class="row row-cards-pf">
+        <pod-metric-chart name="{[name]}" started="$ctrl.writeStarted" chart-id='writeTime' title="Write Response Time" units='ms' ng-model='$ctrl.write_now.timer' class="col-md-4">
+        </pod-metric-chart>
+        <pod-metric-chart name="{[name]}" started="$ctrl.writeStarted" chart-id='writeItems' title="Writes" units='writes' ng-model='$ctrl.write_now.items' class="col-md-4">
+        </pod-metric-chart>
+        <pod-metric-chart name="{[name]}" started="$ctrl.writeStarted" chart-id='bytesChart' title="Bytes" units='bytes' ng-model='$ctrl.write_now.bytes' class="col-md-4">
+        </pod-metric-chart>
+      </div>
+    </div>
+
+  </dov>
+</div>

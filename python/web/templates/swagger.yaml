@@ -1,0 +1,498 @@
+---
+# vim: sw=2 ai ts=2 expandtab foldmethod=indent
+basePath: /api
+definitions:
+  ApiResponse:
+    properties:
+      rc:
+        format: int32
+        type: integer
+      hostname:
+        type: string
+      message:
+        type: string
+      fault:
+        type: string
+      timer:
+        type: number
+        format: double
+    type: object
+  ModelList:
+    properties:
+      num:
+        type: integer
+        format: int32
+    type: object
+  Pod:
+    properties:
+      pod_name:
+        type: string
+      ip_address:
+        type: string
+        format: ipv4
+      phase:
+        type: string
+      state:
+        type: string
+      claim:
+        type: string
+    type: object
+  PodList:
+    allOf:
+      - $ref: '#/definitions/ModelList'
+      - type: object
+        required:
+          - items
+        properties:
+          items:
+            type: array
+            items:
+              $ref: '#/definitions/Pod'
+  PodListResponse:
+    allOf:
+      - $ref: '#/definitions/ApiResponse'
+      - type: object
+        required:
+          - pods
+        properties:
+          pods:
+            $ref: '#/definitions/PodList'
+  Pvc:
+    properties:
+      name:
+        type: string
+      mode:
+        type: string
+      capacity:
+        type: string
+    type: object
+  PvcList:
+    allOf:
+      - $ref: '#/definitions/ModelList'
+      - type: object
+        required:
+          - items
+        properties:
+          items:
+            type: array
+            items:
+              $ref: '#/definitions/Pvc'
+  PvcListResponse:
+    allOf:
+      - $ref: '#/definitions/ApiResponse'
+      - type: object
+        required:
+          - pvcs
+        properties:
+          pvcs:
+            $ref: '#/definitions/PvcList'
+  GoodRecord:
+    type: string
+  GoodRecordList:
+    allOf:
+      - $ref: '#/definitions/ModelList'
+      - type: object
+        required:
+          - items
+        properties:
+          items:
+            type: array
+            items:
+              $ref: '#/definitions/GoodRecord'
+  ErrorRecord:
+    properties:
+      check_header:
+        type: string
+      data_header:
+        type: string
+      data:
+        type: string
+    type: object
+  ErrorRecordList:
+    allOf:
+      - $ref: '#/definitions/ModelList'
+      - type: object
+        required:
+          - items
+        properties:
+          items:
+            type: array
+            items:
+              $ref: '#/definitions/ErrorRecord'
+  FailedRecord:
+    properties:
+      stored_hash:
+        type: string
+      calculated_hash:
+        type: string
+      data:
+        type: string
+  FailedRecordList:
+    allOf:
+      - $ref: '#/definitions/ModelList'
+      - type: object
+        required:
+          - items
+        properties:
+          items:
+            type: array
+            items:
+              $ref: '#/definitions/FailedRecord'
+  ReadCollection:
+    properties:
+      pos:
+        type: integer
+        format: int64
+      records:
+        $ref: '#/definitions/GoodRecordList'
+      errors:
+        $ref: '#/definitions/ErrorRecordList'
+      fails:
+        $ref: '#/definitions/FailedRecordList'
+    type: object
+  ReadResponse:
+    allOf:
+      - $ref: '#/definitions/ApiResponse'
+      - type: object
+        required:
+          - reads
+        properties:
+          reads:
+            $ref: '#/definitions/ReadCollection'
+  Writes:
+    properties:
+      bytes:
+        type: integer
+        format: int64
+      entries:
+        type: integer
+        format: int32
+    type: object
+  WriteResponse:
+    allOf:
+      - $ref: '#/definitions/ApiResponse'
+      - type: object
+        required:
+          - writes
+        properties:
+          writes:
+            $ref: '#/definitions/Writes'
+  TruncateResponse:
+    allOf:
+      - $ref: '#/definitions/ApiResponse'
+      - type: object
+        required:
+          - file
+          - truncated
+        properties:
+          file:
+            type: string
+          truncated:
+            type: boolean
+  AnyValue: {}
+  Remote:
+    properties:
+      pod:
+        $ref: '#/definitions/Pod'
+      url:
+        type: string
+        format: uri
+      rc:
+        type: integer
+        format: int32
+      message:
+        type: string
+      body:
+        type: AnyValue
+      headers:
+        type: array
+        items:
+          type: object
+    type: object
+  RemoteResponse:
+    allOf:
+      - $ref: '#/definitions/ApiResponse'
+      - type: object
+        required:
+          - remote
+        properties:
+          remote:
+            $ref: '#/definitions/Remote'
+externalDocs:
+  description: Find out more about Swagger
+  url: http://swagger.io
+host: {{ ROUTE_HOSTNAME }}
+info:
+  contact:
+    email: billy@gonoph.net
+  description: 'This is a demo of Openshift, microservices, and the access modes for Persistent Volumes.'
+  license:
+    name: GPL 3.0
+    url: https://www.gnu.org/licenses/gpl-3.0.en.html
+  title: OCP Storage Demo
+  version: 1.0.0
+paths:
+  /reader/healthz:
+    get:
+      description: ''
+      operationId: readerHealth
+      parameters: {}
+      produces:
+      - text/plain
+      responses:
+        '200':
+          desccription: OK
+      summary: Check health of reader
+      tags:
+      - reader
+  /reader/read/{pos}:
+    get:
+      description: read records from database file
+      operationId: readFile
+      parameters:
+      - description: read beginning from a specific file position
+        in: path
+        required: false
+        type: integer
+        format: int64
+        name: pos
+      - description: only return a summary of the read and validated records
+        in: query
+        name: summary
+        required: false
+        type: boolean
+      produces:
+      - application/json
+      responses:
+        '200':
+          description: successful operation
+          schema:
+            $ref: '#/definitions/ReadResponse'
+      summary: read records from database file
+      tags:
+      - reader
+  /reader/pods:
+    get:
+      description: get a list of reader pods
+      operationId: listReaderPods
+      produces:
+      - application/json
+      responses:
+        '200':
+          description: list of pods
+          schema:
+            $ref: '#/definitions/PodListResponse'
+      summary: get a list of reader pods
+      tags:
+      - reader
+  /reader/pvcs:
+    get:
+      description: get a list of reader Persistent Volume Claims
+      operationId: listPvcs
+      produces:
+      - application/json
+      responses:
+        '200':
+          description: list of pvcs
+          schema:
+            $ref: '#/definitions/PvcListResponse'
+      summary: get a list of reader pvcs
+      tags:
+      - reader
+  /reader/pods/{podName}/read/{pos}:
+    get:
+      description: read records from database file from remote pod
+      operationId: readRemoteFile
+      parameters:
+      - description: pod name to read from
+        in: path
+        required: true
+        type: string
+        name: podName
+      - description: read beginning from a specific file position
+        in: path
+        required: false
+        type: integer
+        format: int64
+        name: pos
+      - description: only return a summary of the read and validated records
+        in: query
+        name: summary
+        required: false
+        type: boolean
+      produces:
+      - application/json
+      responses:
+        '200':
+          description: successful operation
+          schema:
+            $ref: '#/definitions/RemoteResponse'
+      summary: read records from database file from remote pod
+      tags:
+      - reader
+
+  /writer/healthz:
+    get:
+      description: ''
+      operationId: writerHealth
+      parameters: {}
+      produces:
+      - text/plain
+      responses:
+        '200':
+          desccription: OK
+      summary: Check health of writer
+      tags:
+      - writer
+  /writer/write/{entries}/{mode}/{debug}:
+    get:
+      description: write database records
+      operationId: writeRecords
+      parameters:
+      - description: number of entries to write
+        in: path
+        required: false
+        type: integer
+        format: int32
+        name: entries
+      - description: >
+          mode:
+            * 'MODE_RW' - Use Exclusive RW Lock for writing records
+            * 'MODE_RO' - Use a Shared RO Lock for writing records
+            * 'MODE_IG' - Don't use any locking
+        in: path
+        required: false
+        type: string
+        enum: [ MODE_RW, MODE_RO, MODE_IG ]
+        name: mode
+        summary: the write mode to use for writing records
+      - description: "the debug level to use, higher means more delay between locks/seeks. (max: 10)"
+        in: path
+        name: debug
+        required: false
+        type: integer
+        format: int32
+        summary: "the debug level to use, higher means more delay between locks/seeks. (max: 10)"
+      - description: data to write to database file
+        in: query
+        name: data
+        required: false
+        type: string
+        summary: data to write to database file
+      produces:
+      - application/json
+      responses:
+        '200':
+          description: successful operation
+          schema:
+            $ref: '#/definitions/WriteResponse'
+      summary: write records to the database file
+      tags:
+      - writer
+  /writer/truncate:
+    get:
+      description: truncate database file
+      operationId: truncateFile
+      produces:
+      - application/json
+      responses:
+        '200':
+          description: successful operation
+          schema:
+            $ref: '#/definitions/TruncateResponse'
+      summary: truncate database file
+      tags:
+      - writer
+  /writer/pods:
+    get:
+      description: get a list of writer pods
+      operationId: listWriterPods
+      produces:
+      - application/json
+      responses:
+        '200':
+          description: list of pods
+          schema:
+            $ref: '#/definitions/PodListResponse'
+      summary: get a list of writer pods
+      tags:
+      - writer
+  /writer/pods/{podName}/write/{entries}/{mode}/{debug}:
+    get:
+      description: write database records via a remote pod
+      operationId: writeRemoteRecords
+      parameters:
+      - description: pod name to read from
+        in: path
+        required: true
+        type: string
+        name: podName
+      - description: number of entries to write
+        in: path
+        required: false
+        type: integer
+        format: int32
+        name: entries
+      - description: >
+          mode:
+            * 'MODE_RW' - Use Exclusive RW Lock for writing records
+            * 'MODE_RO' - Use a Shared RO Lock for writing records
+            * 'MODE_IG' - Don't use any locking
+        in: path
+        required: false
+        type: string
+        enum: [ MODE_RW, MODE_RO, MODE_IG ]
+        name: mode
+        summary: the write mode to use for writing records
+      - description: "the debug level to use, higher means more delay between locks/seeks. (max: 10)"
+        in: path
+        name: debug
+        required: false
+        type: integer
+        format: int32
+        summary: "the debug level to use, higher means more delay between locks/seeks. (max: 10)"
+      - description: data to write to database file
+        in: query
+        name: data
+        required: false
+        type: string
+        summary: data to write to database file
+      produces:
+      - application/json
+      responses:
+        '200':
+          description: successful operation
+          schema:
+            $ref: '#/definitions/RemoteResponse'
+      summary: write records to the database file via a remote pod
+      tags:
+      - writer
+  /writer/pods/{podName}/truncate:
+    get:
+      description: truncate database file via a remote pod
+      operationId: truncateRemoteFile
+      parameters:
+      - description: pod name to read from
+        in: path
+        required: true
+        type: string
+        name: podName
+      produces:
+      - application/json
+      responses:
+        '200':
+          description: successful operation
+          schema:
+            $ref: '#/definitions/RemoteResponse'
+      summary: truncate database file via a remote pod
+      tags:
+      - writer
+schemes:
+- http
+securityDefinitions: {}
+swagger: '2.0'
+tags:
+- description: Read operations
+  name: reader
+- description: Write operations
+  name: writer

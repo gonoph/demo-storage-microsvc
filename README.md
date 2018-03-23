@@ -1,0 +1,118 @@
+# Demo of Storage and Microservices in OpenShift
+
+This template generates a project that has several build pipelines to create a
+set of microservices behind a web frontend to show the caveats of the shared
+storage model. It also uses flock() and other thread-safe mechanisms to show
+best practices in coding pods that can freely share the same storage volumes.
+
+{{TOC}}
+
+## Persistent Storage
+
+Typically, with containers, you're not dealing with storing data long term. The
+easiest container workload to manage is basically a stateless container, or one
+that stores it's state to an external source like a external database. However,
+sometimes you want to store something on disk for your container (pod in
+kubernetes and OpenShift parlance), so that the next time the container is
+started it will be able to re-read the data it had written previously.
+
+In Kubernetes and OpenShift that ability to store data for reuse is called
+Persistent Storage. It's categorized as two (2) concepts:
+
+* (PV) Persistent Volumes: The system definition of the storage medium that is
+  exposed to pods and containers.
+* (PVC) Persistent Volume Claims: The user definition of a request for some
+  type of PV.
+
+These storage objects are matched based on storage size and something called
+Access Mode. An Access Mode is another property of the PV that helps describe
+the capabilities of the underlying storage. Thus, a user can request this
+storage via a Claim (PVC), detailing the needed capability of the storage, and
+the system will attempt to match that size and capability with the list of
+volumes (PV) that are available for use.
+
+Acording to the [OpenShift 3.7 documentation][1], it's important to note that
+Access Modes are strictly information:
+
+> A volume’s **AccessModes** are descriptors of the volume’s capabilities. They
+> are not enforced constraints. The storage provider is responsible for runtime
+> errors resulting from invalid use of the resource.
+
+[1]: https://docs.openshift.com/container-platform/3.7/architecture/additional_concepts/storage.html#pv-access-modes
+
+## Purpose of this demo
+
+### Show examples of Flock() and mutex
+
+Because **AccessModes** are "strictly informational", a developer cannot depend on
+the system to enforce those access modes. There are several ways to ensure multiple nodes, processes, and/or pods can access the same storage (PV). This demo uses **fock()** and thread synchronization using a type of **mutex**.
+
+These two constructs allow multiple threads, processes (containers), and nodes to access the same storage volume (PV) AND the exact same file. To test the locking constructs, there are several operations:
+
+1. write data to the datafile using a multiline record format, and storing a hash of the data as part of the record.
+2. read the data, while using the hash to validate the integrity of the record.
+3. offer multiple types of file locking, that a caller can select to see the behavior of each type of locking type.
+4. add the ability to introduce an artificial delay between elements of the record in order to exacerbate the problem of having multiple processes/threads write to the same file.
+5. truncate the datafile, so we can easily reset metrics.
+
+### Implement as microservices with a front-end
+
+Since this runs in Openshift, I felt it was advantageous to split the read and write operations into their own service, then each could be scaled independently. Additionally, this opened the door to have a front-end pod who's job was solely to act as an friendly user interface to the APIs and operations.
+
+Additionally, since I did't want to create multiple routes with their own DNS name, I felt it appropriate to share the same name based route, but use path based routing. So ***/api/reader*** calls would go to the reader pods, and **/api/writer** calls would go the writer pods.
+
+### Expose the OpenShift API to the Application
+
+Routing in OpenShift attempts to maintain sticky state for sessions, which means that a browser that is directed toward a backend pod is more likely to be redirected to that same pod in the future. This is accomplished using cookies that are injected into the request and response. Thus, it made sense to add the ability to send a **read** or **write** operation to a specific pod, allowing a caller to really ensure that reads or writes are spread out across the different nodes/pods.
+
+The demo then needed the ability to call the OpenShift API in order to return a list of active pods for that application. Then, internally, we proxy the request to the remote pod using it's SDN internal ip-address, and finally return the resulting payload as a nested response.
+
+### Show off fancy UI
+
+A group of Red Hat UI and branding folks decided they wanted to share their experiences and lessons from UI for Red Hat products. Thus started [Pattern Fly][2] as a way to collect and show the world the types of design patterns that go into Red Hat products.
+
+I happened to stumble upon it, and decided the demo needed a nice UI to help exercise these read and write APIs in a way that could easier track and show success and failure of the different locking modes.
+
+It also helped me learn and experience some of the new technologies in the UI world, such as [angularjs][3], [UI-Bootstrap][4], and [swagger][5]
+
+[2]: https://www.patternfly.org/
+[3]: https://angularjs.org/
+[4]: https://angular-ui.github.io/bootstrap/
+[5]: https://swagger.io/
+
+## Optimizations
+
+This isn't the only way to design your application to read and write to shared storage (PV). I could have easily used:
+
+- record/byte locking - this would probably yield faster performance times and allow concurrent writing to the same file as long as the written positions were different.
+- separate directories - give each pod it's own directory within the PV where it would be free to write it's data without concern. This would have complicated the reader service, and I would have needed to implement some type of reclamation process when the pods ended, like an archive of past pod data.
+- use a Write Ahead Log - A WAL would allow multiple processes/pods to write to the same datafile, but use another temporary file to quickly write data, which would then be "flushed" to the real datafile when it's access is available.
+
+## Conclusion
+
+While it's not rival to code an application to read and write to the same storage volume (PV), it can be done! With some thought and planning, you can craft an interface that allows your application to share storage with other instances of itself in a clean and defined manner.
+
+On the other hand, it might be easier to not share storage with each instance of your application. However, that surely prevents things like autoscaling and complicates the administration of your application by maintaining multiple deployments of the same app.
+
+# Disclaimer
+
+I'm a Solutions Architect with Red Hat with a background in application development, systems administration, and a hint of networking experience. I introduce customers to Red Hat products, and help them gain the most value from these products. I am not releasing this as a representative of Red Hat. The purpose of this project is to demonstrate some capabilities of OpenShift as well as highlight some coding practices to write to shared storage in a stable way.
+
+# License
+Copyright (C) 2018  Billy Holmes
+
+Released and Licensed under the [GPLv3](https://www.gnu.org/licenses/gpl-3.0.en.html).
+
+```
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.

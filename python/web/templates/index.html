@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html ng-app="demoApp">
+<head>
+  <meta content="text/html;charset=utf-8" http-equiv="Content-Type">
+  <meta content="utf-8" http-equiv="encoding">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <!-- CSS files -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/patternfly/3.39.0/css/patternfly.min.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/patternfly/3.39.0/css/patternfly-additions.min.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/angular-patternfly/4.14.11/styles/angular-patternfly.min.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/css/bootstrap.min.css" />
+  <!-- project CSS -->
+  <link rel="stylesheet" href="/static/css/demo.css" />
+
+  <!-- needed for patternfly and angular -->
+  <!-- CDN replacements -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.17/d3.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/c3/0.4.21/c3.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/angular.js/1.6.5/angular.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/angular.js/1.6.5/angular-animate.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/angular.js/1.6.5/angular-sanitize.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/patternfly/3.40.0/js/patternfly-settings.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/patternfly/3.40.0/js/patternfly-settings-colors.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/patternfly/3.40.0/js/patternfly-settings-charts.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/angular-ui-bootstrap/2.5.0/ui-bootstrap-tpls.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/angular-patternfly/4.14.11/angular-patternfly.min.js"></script>
+
+</head>
+<body>
+  <div class="container-fluid container-cards-pf">
+    <div class="well">
+      <h1>OCP Storage and Microservices Demo
+        <span class="small">Project {{name | title}}</span>
+      </h1>
+    </div>
+    <div class="well">
+
+      <pod-list-view />
+
+    </div>
+  </div>
+  <!-- local javascript files -->
+  <script type="application/javascript" src="/static/js/init.js"></script>
+  <script type="application/javascript" src="/static/js/settings.js"></script>
+  <script type="application/javascript" src="/static/js/pod-service.js"></script>
+  <script type="application/javascript" src="/static/js/read-service.js"></script>
+  <script type="application/javascript" src="/static/js/write-service.js"></script>
+  <script type="application/javascript" src="/static/js/pod-list-controller.js"></script>
+  <script type="application/javascript" src="/static/js/pod-item-controller.js"></script>
+  <script type="application/javascript" src="/static/js/pod-metric-chart-controller.js"></script>
+</body>
+</html>

@@ -1,0 +1,572 @@
+---
+# vim: sw=2 ai expandtab foldmethod=indent
+apiVersion: v1
+kind: Template
+labels:
+  app: demo
+  template: demo-storage-microsvc-template
+message: |-
+  The project pods run as special service account with these permissions:
+    service acct : ${NAME}-acct
+    service role : /edit
+
+  The following service(s) have been created in your project: ${NAME}.
+    web path     : http://${ROUTE_HOSTNAME}/
+    reader path  : http://${ROUTE_HOSTNAME}/api/reader
+    writer path  : http://${ROUTE_HOSTNAME}/api/writer
+    swagger docs : http://${ROUTE_HOSTNAME}/docs
+    pipcache     : ${PIP_INDEX_URL}
+
+    There are three projects that can be scaled independently:
+      * ${NAME}-web    : the front end web service
+      * ${NAME}-reader : the reader microservice
+      * ${NAME}-writer : the writer microservice
+
+    Additionally, there are several build pipelines:
+      * ${NAME}-base   : to create the base python image with Flask and gunicorn.
+      * ${NAME}-web    : to create the frontend web service
+      * ${NAME}-reader : to create the reader microservice
+      * ${NAME}-writer : to create the writer microservice
+metadata:
+  annotations:
+    description: |-
+      Template to generate a set of microservices and web frontend to show the caveats of the shared storage model and the best way to code so that pods can freely share the same storage volumes.
+    iconClass: icon-python
+    openshift.io/display-name: OCP Storage and Microservices Demo
+    tags: microservices,python,storage
+    template.openshift.io/long-description: This template generates a project
+      that has several build pipelines to create a set of microservices behind a
+      web frontend to show the caveats of the sahred storage model. It also uses
+      flock() and other thread-safe mechanisms to show best practices in coding
+      pods that can freely share the same storage volumes.
+    template.openshift.io/provider-display-name: Gonoph.Net
+    template.openshift.io/support-url: https://www.gonoph.net
+  name: demo-storage-microsvc
+  app: demo
+objects:
+- apiVersion: v1
+  kind: ServiceAccount
+  metadata:
+    name: ${NAME}-acct
+- apiVersion: v1
+  kind: RoleBinding
+  groupNames: null
+  metadata:
+    name: edit
+  roleRef:
+    name: edit
+  subjects:
+  - kind: ServiceAccount
+    name: ${NAME}-acct
+- apiVersion: v1
+  kind: ImageStream
+  metadata:
+    annotations:
+      description: Base image stream
+    name: ${NAME}-base
+- apiVersion: v1
+  kind: ImageStream
+  metadata:
+    annotations:
+      description: Image for the reader service
+    name: ${NAME}-reader
+- apiVersion: v1
+  kind: ImageStream
+  metadata:
+    annotations:
+      description: Image for the writer service
+    name: ${NAME}-writer
+- apiVersion: v1
+  kind: ImageStream
+  metadata:
+    annotations:
+      description: Image for the web front end
+    name: ${NAME}-web
+- apiVersion: v1
+  kind: PersistentVolumeClaim
+  metadata:
+    name: ${NAME}-claim-rox
+  spec:
+    accessModes:
+    - ReadOnlyMany
+    resources:
+      requests:
+        storage: 256Mi
+  status: {}
+- apiVersion: v1
+  kind: PersistentVolumeClaim
+  metadata:
+    name: ${NAME}-claim-rwx
+  spec:
+    accessModes:
+    - ReadWriteMany
+    resources:
+      requests:
+        storage: 256Mi
+  status: {}
+- apiVersion: v1
+  kind: PersistentVolumeClaim
+  metadata:
+    name: ${NAME}-claim-rwo
+  spec:
+    accessModes:
+    - ReadWriteOnce
+    resources:
+      requests:
+        storage: 256Mi
+  status: {}
+- apiVersion: v1
+  kind: BuildConfig
+  metadata:
+    name: ${NAME}-base
+  spec:
+    failedBuildsHistoryLimit: 1
+    nodeSelector: null
+    output:
+      to:
+        kind: ImageStreamTag
+        name: ${NAME}-base:latest
+    source:
+      type: git
+      git:
+        ref: ${SOURCE_REPOSITORY_REF}
+        uri: ${SOURCE_REPOSITORY_URL}
+      contextDir: python/base
+    strategy:
+      sourceStrategy:
+        env:
+          - name: PIP_INDEX_URL
+            value: ${PIP_INDEX_URL}
+          - name: PIP_TRUSTED_HOST
+            value: ${PIP_INDEX_URL}
+        from:
+          kind: ImageStreamTag
+          name: python:latest
+          namespace: openshift
+      type: Source
+    successfulBuildsHistoryLimit: 3
+    triggers:
+    - github:
+        secret: ${GIT_HOOK_SECRET}
+      type: GitHub
+    - type: ImageChange
+    - type: ConfigChange
+  status: {}
+- apiVersion: v1
+  kind: BuildConfig
+  metadata:
+    name: ${NAME}-reader
+  spec:
+    failedBuildsHistoryLimit: 1
+    nodeSelector: null
+    output:
+      to:
+        kind: ImageStreamTag
+        name: ${NAME}-reader:latest
+    source:
+      type: git
+      git:
+        ref: ${SOURCE_REPOSITORY_REF}
+        uri: ${SOURCE_REPOSITORY_URL}
+      contextDir: python/reader
+    strategy:
+      sourceStrategy:
+        env:
+          - name: PIP_INDEX_URL
+            value: ${PIP_INDEX_URL}
+          - name: PIP_TRUSTED_HOST
+            value: ${PIP_INDEX_URL}
+        from:
+          kind: ImageStreamTag
+          name: ${NAME}-base:latest
+      type: Source
+    successfulBuildsHistoryLimit: 3
+    triggers:
+    - github:
+        secret: ${GIT_HOOK_SECRET}
+      type: GitHub
+    - type: ImageChange
+    - type: ConfigChange
+  status: {}
+- apiVersion: v1
+  kind: BuildConfig
+  metadata:
+    name: ${NAME}-writer
+  spec:
+    failedBuildsHistoryLimit: 1
+    nodeSelector: null
+    output:
+      to:
+        kind: ImageStreamTag
+        name: ${NAME}-writer:latest
+    source:
+      type: git
+      git:
+        ref: ${SOURCE_REPOSITORY_REF}
+        uri: ${SOURCE_REPOSITORY_URL}
+      contextDir: python/writer
+    strategy:
+      sourceStrategy:
+        env:
+          - name: PIP_INDEX_URL
+            value: ${PIP_INDEX_URL}
+          - name: PIP_TRUSTED_HOST
+            value: ${PIP_INDEX_URL}
+        from:
+          kind: ImageStreamTag
+          name: ${NAME}-base:latest
+      type: Source
+    successfulBuildsHistoryLimit: 3
+    triggers:
+    - github:
+        secret: ${GIT_HOOK_SECRET}
+      type: GitHub
+    - type: ImageChange
+    - type: ConfigChange
+  status: {}
+- apiVersion: v1
+  kind: BuildConfig
+  metadata:
+    name: ${NAME}-web
+  spec:
+    failedBuildsHistoryLimit: 1
+    nodeSelector: null
+    output:
+      to:
+        kind: ImageStreamTag
+        name: ${NAME}-web:latest
+    source:
+      type: git
+      git:
+        ref: ${SOURCE_REPOSITORY_REF}
+        uri: ${SOURCE_REPOSITORY_URL}
+      contextDir: python/web
+    strategy:
+      sourceStrategy:
+        env:
+          - name: PIP_INDEX_URL
+            value: ${PIP_INDEX_URL}
+          - name: PIP_TRUSTED_HOST
+            value: ${PIP_INDEX_URL}
+        from:
+          kind: ImageStreamTag
+          name: ${NAME}-base:latest
+      type: Source
+    successfulBuildsHistoryLimit: 3
+    triggers:
+    - github:
+        secret: ${GIT_HOOK_SECRET}
+      type: GitHub
+    - type: ImageChange
+    - type: ConfigChange
+  status: {}
+- apiVersion: v1
+  kind: DeploymentConfig
+  metadata:
+    generation: 1
+    name: ${NAME}-reader
+  spec:
+    replicas: 1
+    selector:
+      app: demo
+      name: ${NAME}-reader
+    strategy:
+      type: Rolling
+    template:
+      metadata:
+        labels:
+          app: demo
+          name: ${NAME}-reader
+      spec:
+        containers:
+        - image: ' '
+          imagePullPolicy: Always
+          name: ${NAME}-reader
+          env:
+            - name: NAME
+              value: ${NAME}-reader
+          ports:
+          - name: web
+            containerPort: 8080
+            protocol: TCP
+          resources: {}
+          livenessProbe:
+            httpGet:
+              path: /api/reader/healthz
+              port: 8080
+            initialDelaySeconds: 3
+            periodSeconds: 3
+          readinessProbe:
+            failureThreshold: 3
+            httpGet:
+              path: /api/reader/healthz
+              port: 8080
+              scheme: HTTP
+          volumeMounts:
+            - mountPath: /opt/app-root/data
+              name: ${NAME}-data
+        serviceAccount: ${NAME}-acct
+        volumes:
+          - name: ${NAME}-data
+            persistentVolumeClaim:
+              claimName: ${NAME}-claim-rwo
+    triggers:
+    - type: ConfigChange
+    - imageChangeParams:
+        automatic: true
+        containerNames:
+        - ${NAME}-reader
+        from:
+          kind: ImageStreamTag
+          name: ${NAME}-reader:latest
+      type: ImageChange
+  status: {}
+- apiVersion: v1
+  kind: DeploymentConfig
+  metadata:
+    generation: 1
+    name: ${NAME}-writer
+  spec:
+    replicas: 1
+    selector:
+      app: demo
+      name: ${NAME}-writer
+    strategy:
+      type: Rolling
+    template:
+      metadata:
+        labels:
+          app: demo
+          name: ${NAME}-writer
+      spec:
+        containers:
+        - image: ' '
+          imagePullPolicy: Always
+          name: ${NAME}-writer
+          env:
+            - name: NAME
+              value: ${NAME}-writer
+          ports:
+          - name: web
+            containerPort: 8080
+            protocol: TCP
+          resources: {}
+          livenessProbe:
+            httpGet:
+              path: /api/writer/healthz
+              port: 8080
+            initialDelaySeconds: 3
+            periodSeconds: 3
+          readinessProbe:
+            failureThreshold: 3
+            httpGet:
+              path: /api/writer/healthz
+              port: 8080
+              scheme: HTTP
+          volumeMounts:
+            - mountPath: /opt/app-root/data
+              name: ${NAME}-data
+        serviceAccount: ${NAME}-acct
+        volumes:
+          - name: ${NAME}-data
+            persistentVolumeClaim:
+              claimName: ${NAME}-claim-rwo
+    triggers:
+    - type: ConfigChange
+    - imageChangeParams:
+        automatic: true
+        containerNames:
+        - ${NAME}-writer
+        from:
+          kind: ImageStreamTag
+          name: ${NAME}-writer:latest
+      type: ImageChange
+  status: {}
+- apiVersion: v1
+  kind: DeploymentConfig
+  metadata:
+    generation: 1
+    name: ${NAME}-web
+  spec:
+    replicas: 1
+    selector:
+      app: demo
+      name: ${NAME}-web
+    strategy:
+      type: Rolling
+    template:
+      metadata:
+        labels:
+          app: demo
+          name: ${NAME}-web
+      spec:
+        containers:
+        - image: ' '
+          imagePullPolicy: Always
+          name: ${NAME}-web
+          env:
+            - name: NAME
+              value: ${NAME}-web
+            - name: ROUTE_HOSTNAME
+              value: ${ROUTE_HOSTNAME}
+          ports:
+          - name: web
+            containerPort: 8080
+            protocol: TCP
+          resources: {}
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 8080
+            initialDelaySeconds: 3
+            periodSeconds: 3
+          readinessProbe:
+            failureThreshold: 3
+            httpGet:
+              path: /
+              port: 8080
+              scheme: HTTP
+          volumeMounts:
+            - mountPath: /opt/app-root/data
+              name: ${NAME}-data
+        serviceAccount: ${NAME}-acct
+        volumes:
+          - name: ${NAME}-data
+            persistentVolumeClaim:
+              claimName: ${NAME}-claim-rwo
+    triggers:
+    - type: ConfigChange
+    - imageChangeParams:
+        automatic: true
+        containerNames:
+        - ${NAME}-web
+        from:
+          kind: ImageStreamTag
+          name: ${NAME}-web:latest
+      type: ImageChange
+  status: {}
+- apiVersion: v1
+  kind: Service
+  metadata:
+    name: ${NAME}-reader
+  spec:
+    ports:
+    - name: web
+      port: 8080
+      protocol: TCP
+      targetPort: 8080
+    selector:
+      app: demo
+      name: ${NAME}-reader
+    sessionAffinity: None
+    type: ClusterIP
+  status: {}
+- apiVersion: v1
+  kind: Service
+  metadata:
+    name: ${NAME}-writer
+  spec:
+    ports:
+    - name: web
+      port: 8080
+      protocol: TCP
+      targetPort: 8080
+    selector:
+      app: demo
+      name: ${NAME}-writer
+    sessionAffinity: None
+    type: ClusterIP
+  status: {}
+- apiVersion: v1
+  kind: Service
+  metadata:
+    name: ${NAME}-web
+  spec:
+    ports:
+    - name: web
+      port: 8080
+      protocol: TCP
+      targetPort: 8080
+    selector:
+      app: demo
+      name: ${NAME}-web
+    sessionAffinity: None
+    type: ClusterIP
+  status: {}
+- apiVersion: v1
+  kind: Route
+  metadata:
+    labels:
+      app: demo
+    name: ${NAME}-web
+  spec:
+    host: ${ROUTE_HOSTNAME}
+    path: /
+    port:
+      targetPort: web
+    to:
+      kind: Service
+      name: ${NAME}-web
+      weight: 100
+    wildcardPolicy: None
+- apiVersion: v1
+  kind: Route
+  metadata:
+    labels:
+      app: demo
+    name: ${NAME}-reader
+  spec:
+    host: ${ROUTE_HOSTNAME}
+    path: '/api/reader'
+    port:
+      targetPort: web
+    to:
+      kind: Service
+      name: ${NAME}-reader
+      weight: 100
+    wildcardPolicy: None
+- apiVersion: v1
+  kind: Route
+  metadata:
+    labels:
+      app: demo
+    name: ${NAME}-writer
+  spec:
+    host: ${ROUTE_HOSTNAME}
+    path: '/api/writer'
+    port:
+      targetPort: web
+    to:
+      kind: Service
+      name: ${NAME}-writer
+      weight: 100
+    wildcardPolicy: None
+parameters:
+- description: The name assigned to all of the frontend objects defined in this template.
+  displayName: Name
+  name: NAME
+  value: demo
+- description: The hostname for the exposed service route.
+  displayName: Route Hostname
+  name: ROUTE_HOSTNAME
+  value: demo.example.com
+- description: Github trigger secret.  A difficult to guess string encoded as part
+    of the webhook URL.  Not encrypted.
+  displayName: GitHub Webhook Secret
+  from: '[a-zA-Z0-9]{40}'
+  generate: expression
+  name: GITHUB_WEBHOOK_SECRET
+- description: Pip Caching Index - using pipcache, devpi-server, or pypi mirror
+  displayName: Pip Index URL
+  from: 'https?//[a-zA-Z0-9\.]{2,}'
+  value: "http://pipcache.infra.svc.cluster.local/root/pypi"
+  name: PIP_INDEX_URL
+- description: The URL of the repository with your application source code.
+  displayName: Git Repository URL
+  name: SOURCE_REPOSITORY_URL
+  required: true
+  value: http://git.virt.gonoph.net/git/Openshift/demo-storage-microsvc.git
+- description: Set this to a branch name, tag or other ref of your repository if you
+    are not using the default branch.
+  displayName: Git Reference
+  name: SOURCE_REPOSITORY_REF

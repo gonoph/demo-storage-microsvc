@@ -1,0 +1,38 @@
+#!/bin/sh
+
+set -e -E 
+
+echo "Checking for rewrite of PIP_TRUSTED_HOST=${PIP_TRUSTED_HOST}"
+case x${PIP_TRUSTED_HOST} in
+  xhttp:*)
+    echo "Rewriting PIP_TRUSTED_HOST ${PIP_TRUSTED_HOST}"
+    export PIP_TRUSTED_HOST=$( echo ${PIP_TRUSTED_HOST} | cut -d/ -f 3 )
+    echo "PIP_TRUSTED_HOST is now ${PIP_TRUSTED_HOST}"
+    ;;
+esac
+
+cd /tmp/src
+pip install -U pip
+pip install -r requirements.txt
+pip install .
+
+D=`pwd`
+S=$(mktemp -d)
+
+cp -a {.s2i,requirements.txt,logging.conf} $S
+cd /
+rm -rf $D
+mkdir $D
+cd $D
+cp -a $S/{.s2i,requirements.txt,logging.conf} $D
+
+rm -rf $S
+
+cd
+
+${STI_SCRIPTS_PATH}/assemble "$@"
+
+cd /
+rm -rf $D
+mkdir $D
+cd $D

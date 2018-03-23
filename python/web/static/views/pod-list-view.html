@@ -1,0 +1,112 @@
+<div class="row">
+  <div class="col-sm-12">
+    <div class="row row-cards-pf">
+      <div class="col-sm-2">
+
+        <div class="card-pf card-pf-accented card-pf-aggregate-status">
+          <h2 class="card-pf-title">
+            <span class="fa fa-cubes"></span>Reader Pods:
+            <span class="card-pf-aggregate-status-count">{[ $ctrl.podReadData_len() | number:0 ]}</span>
+          </h2>
+          <div class="card-pf-body">
+            <p class="card-pf-aggregate-status-notifications">
+              <span class="card-pf-aggregate-status-notification"><span uib-tooltip="pods running" tooltip-placement="bottom"><span class="pficon pficon-ok"></span>{[ $ctrl.podReadData_filter('Running', true) | number:0 ]}</span></span>
+              <span class="card-pf-aggregate-status-notification"><span uib-tooltip="pods not running" tooltip-placement="bottom"><span class="pficon pficon-error-circle-o"></span>{[ $ctrl.podReadData_filter('Running', false) | number:0 ]}</span></span>
+            </p>
+          </div>
+        </div>
+
+      </div>
+      <div class="col-sm-2">
+
+        <div class="card-pf card-pf-accented card-pf-aggregate-status">
+          <h2 class="card-pf-title">
+            <span class="fa fa-cubes"></span>Writer Pods:
+            <span class="card-pf-aggregate-status-count">{[ $ctrl.podData_len() | number:0 ]}</span>
+          </h2>
+          <div class="card-pf-body">
+            <p class="card-pf-aggregate-status-notifications">
+              <span class="card-pf-aggregate-status-notification"><span uib-tooltip="pods running" tooltip-placement="bottom"><span class="pficon pficon-ok"></span>{[ $ctrl.podData_filter('Running', true) | number:0 ]}</span></span>
+              <span class="card-pf-aggregate-status-notification"><span uib-tooltip="pods not running" tooltip-placement="bottom"><span class="pficon pficon-error-circle-o"></span>{[ $ctrl.podData_filter('Running', false) | number:0 ]}</span></span>
+            </p>
+          </div>
+        </div>
+
+      </div>
+      <div class="col-sm-2">
+
+        <div class="card-pf card-pf-accented card-pf-aggregate-status">
+          <h2 class="card-pf-title">
+            <span class="fa fa-cubes"></span>Web Pods:
+            <span class="card-pf-aggregate-status-count">{[ $ctrl.podWebData_len() | number:0 ]}</span>
+          </h2>
+          <div class="card-pf-body">
+            <p class="card-pf-aggregate-status-notifications">
+              <span class="card-pf-aggregate-status-notification"><span uib-tooltip="pods running" tooltip-placement="bottom"><span class="pficon pficon-ok"></span>{[ $ctrl.podWebData_filter('Running', true) | number:0 ]}</span></span>
+              <span class="card-pf-aggregate-status-notification"><span uib-tooltip="pods not running" tooltip-placement="bottom"><span class="pficon pficon-error-circle-o"></span>{[ $ctrl.podWebData_filter('Running', false) | number:0 ]}</span></span>
+            </p>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <h3 class="pod-list">
+      Current Writer Pods
+      <button type="button"
+        class="btn btn-primary btn-xs"
+        ng-change="$ctrl.truncate()"
+        ng-model="$ctrl.truncate.selected"
+        uib-btn-checkbox>Truncate Files</button>
+        <label class="small" >
+          <input type="checkbox" ng-model="$ctrl.checkboxPods" />
+          Connect to specific pod
+        </label>
+        <div class="btn-group" uib-dropdown>
+          <button type="button" class="btn btn-default btn-xs" uib-dropdown-toggle>
+            {[ $ctrl.btnRWSettings.modes[$ctrl.btnRWSettings.selected] ]}
+            <span class="caret"></span>
+          </button>
+          <ul class="dropdown-menu" role="menu" uib-dropdown-menu>
+            <li role="menuitem"
+              ng-repeat="(rwmode, rwname) in $ctrl.btnRWSettings.modes"
+              ng-class="$ctrl.btnRWSettings.selected == rwmode ? 'selected' : ''">
+                <a href="" ng-click="$ctrl.btnRWSettings.click(rwmode)">{[rwname]}</a>
+            </li>
+          </ul>
+        </div>
+
+        <div class="btn-group" uib-dropdown>
+          <button type="button" class="btn btn-default btn-xs" uib-dropdown-toggle >
+            Delay Factor {[ $ctrl.btnDelayFactor.modes[$ctrl.btnDelayFactor.selected] ]}
+            <span class="caret"></span>
+          </button>
+          <ul class="dropdown-menu" role="menu" uib-dropdown-menu>
+            <li role="menuitem"
+              ng-repeat="(delay, factor) in $ctrl.btnDelayFactor.modes"
+              ng-class="$ctrl.btnDelayFactor.selected == delay ? 'selected' : ''">
+                <a href="" ng-click="$ctrl.btnDelayFactor.click(delay)">{[factor]}</a>
+            </li>
+          </ul>
+        </div>
+
+        <div class="btn-group" uib-dropdown>
+          <button type="button" class="btn btn-default btn-xs" uib-dropdown-toggle >
+            Writes {[ $ctrl.btnWriteEntries.modes[$ctrl.btnWriteEntries.selected] ]}
+            <span class="caret"></span>
+          </button>
+          <ul class="dropdown-menu" role="menu" uib-dropdown-menu>
+            <li role="menuitem"
+              ng-repeat="(entries, factor) in $ctrl.btnWriteEntries.modes"
+              ng-class="$ctrl.btnWriteEntries.selected == entries ? 'selected' : ''">
+                <a href="" ng-click="$ctrl.btnWriteEntries.click(entries)">{[factor]}</a>
+            </li>
+          </ul>
+        </div>
+    </h3>
+
+    <uib-accordion close-others="false">
+      <pod-item-view ng-repeat="(name, pod) in $ctrl.podData" ng-model="pod" name="name" />
+    </uib-accordion>
+  </div>
+</div>
