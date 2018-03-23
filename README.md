@@ -1,3 +1,7 @@
+:toc: macro
+:toc-title:
+:toclevels: 99
+
 # Demo of Storage and Microservices in OpenShift
 
 This template generates a project that has several build pipelines to create a
@@ -5,7 +9,7 @@ set of microservices behind a web frontend to show the caveats of the shared
 storage model. It also uses flock() and other thread-safe mechanisms to show
 best practices in coding pods that can freely share the same storage volumes.
 
-{{TOC}}
+toc::[]
 
 ## Persistent Storage
 
