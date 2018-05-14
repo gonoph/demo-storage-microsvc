@@ -12,9 +12,10 @@ logger = logging.getLogger(__name__)
 app = Flask(__name__)
 _init_handlers(app)
 
-@app.route("/")
+@app.route("/api/reader")
+@app.route("/api/reader/")
 def index():
-    return redirect('/api/reader/healthz')
+    return redirect('/api/reader/read')
 
 @app.route("/api/reader/healthz")
 @plain_response()
